@@ -14,16 +14,6 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QPlainTextEdit" name="face_image_TextEdit">
-    <property name="geometry">
-     <rect>
-      <x>400</x>
-      <y>150</y>
-      <width>291</width>
-      <height>271</height>
-     </rect>
-    </property>
-   </widget>
    <widget class="QListWidget" name="login_user_list">
     <property name="geometry">
      <rect>
@@ -86,25 +76,21 @@
      <string>关闭</string>
     </property>
    </widget>
+   <widget class="QLabel" name="show_camera_label">
+    <property name="geometry">
+     <rect>
+      <x>400</x>
+      <y>150</y>
+      <width>281</width>
+      <height>271</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
   </widget>
  </widget>
  <resources/>
- <connections>
-  <connection>
-   <sender>close_btn</sender>
-   <signal>clicked()</signal>
-   <receiver>MainWindow</receiver>
-   <slot>close()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>446</x>
-     <y>488</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>580</x>
-     <y>510</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>

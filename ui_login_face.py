@@ -14,9 +14,6 @@ class Ui_MainWindow(object):
         MainWindow.resize(800, 600)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
-        self.face_image_TextEdit = QtWidgets.QPlainTextEdit(self.centralwidget)
-        self.face_image_TextEdit.setGeometry(QtCore.QRect(400, 150, 291, 271))
-        self.face_image_TextEdit.setObjectName("face_image_TextEdit")
         self.login_user_list = QtWidgets.QListWidget(self.centralwidget)
         self.login_user_list.setGeometry(QtCore.QRect(60, 150, 271, 271))
         self.login_user_list.setObjectName("login_user_list")
@@ -32,10 +29,13 @@ class Ui_MainWindow(object):
         self.close_btn = QtWidgets.QPushButton(self.centralwidget)
         self.close_btn.setGeometry(QtCore.QRect(400, 470, 93, 28))
         self.close_btn.setObjectName("close_btn")
+        self.show_camera_label = QtWidgets.QLabel(self.centralwidget)
+        self.show_camera_label.setGeometry(QtCore.QRect(400, 150, 281, 271))
+        self.show_camera_label.setText("")
+        self.show_camera_label.setObjectName("show_camera_label")
         MainWindow.setCentralWidget(self.centralwidget)
 
         self.retranslateUi(MainWindow)
-        self.close_btn.clicked.connect(MainWindow.close)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
