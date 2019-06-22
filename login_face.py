@@ -3,7 +3,11 @@ import ui_login_face
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
+
 import cv2
+from conn_mssql import *
+from Update_Table import *
+from Settings import *
 
 
 class mainWindow(QMainWindow, ui_login_face.Ui_MainWindow):
@@ -11,13 +15,36 @@ class mainWindow(QMainWindow, ui_login_face.Ui_MainWindow):
 		# super这个用法是调用父类的构造函数
 	    # parent=None表示默认没有父Widget，如果指定父亲Widget，则调用之
 		super(mainWindow, self).__init__(parent)
+
+		# 数据库的user_face与users表进行对比更新
+		Update_UserFace_Table()
+
+		self.setupUi(self)  # 初始化程序界面
+		self.User_SetupUi()  # 自定义的初始化界面，除了通过designer画的ui生成的界面之外，用户通过程序添加的界面控件
+		self.slot_init()  # 初始化槽函数
+
+
+	def User_SetupUi(self):
+
+		# 定义定时器，为了显示摄像头的视频
 		self.timer_camera = QTimer()  # 定义定时器，用于控制显示视频的帧率
 		self.cap = cv2.VideoCapture()  # 视频流
 		self.CAM_NUM = 0  # 为0时表示视频流来自笔记本内置摄像头
 		self.open_camera()
 
-		self.setupUi(self)  # 初始化程序界面
-		self.slot_init()  # 初始化槽函数
+		# 显示用户List
+		self.database = db_connect()
+		sql = 'select * from User_Face'
+		querys = self.database.execQuery(sql)
+
+		for row in querys:
+			user_name = row.RealName
+			only_id = row.OnlyID
+			item = QListWidgetItem(user_name)
+			# 保存变量Only_id
+			item.setData(Qt.UserRole,only_id)
+			self.login_user_list.addItem(item)
+
 
 	'''初始化所有槽函数'''
 
@@ -47,8 +74,19 @@ class mainWindow(QMainWindow, ui_login_face.Ui_MainWindow):
 
 	def get_a_picture(self):
 		# 对当前选中的用户进行拍照
-		ret = self.login_user_list.currentIndex().data()
-		print(ret)
+		only_id = self.login_user_list.currentIndex().data(Qt.UserRole)
+		user_name = self.login_user_list.currentIndex().data()
+		flag, image = self.cap.read()  # 从视频流中读取
+		image_path =VIS_PATH + user_name+'.jpg'
+		# 保存成图片存到相应路径
+		cv2.imencode('.jpg', image)[1].tofile(image_path)
+
+		cv2.imshow('image',image)
+		# 保存照片到数据库
+		data = image.tobytes()       #将ndarray数据转成bytes保存到数据库
+		sql = "update User_Face set Face_NIR=? where onlyID =? "
+		self.database.execNoQuery(sql,[data,only_id])
+
 
 	def closeWindow(self):
 		# 关闭摄像头
