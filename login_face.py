@@ -41,7 +41,12 @@ class mainWindow(QMainWindow, ui_login_face.Ui_MainWindow):
 		self.cap = cv2.VideoCapture()  # 视频流
 		self.CAM_NUM = 0  # 为0时表示视频流来自笔记本内置摄像头
 		self.open_camera()
+		# 显示List
+		self.load_table_data()
 
+
+	def load_table_data(self):
+		self.login_user_list.clear()
 		# 显示用户List
 		self.database = db_connect()
 		sql = 'select * from User_Face'
@@ -51,8 +56,13 @@ class mainWindow(QMainWindow, ui_login_face.Ui_MainWindow):
 			user_name = row.RealName
 			only_id = row.OnlyID
 			item = QListWidgetItem(user_name)
+			if row.Face_VIS != None:
+				# 如果存在人脸图片，则打勾表示已拍照
+				item.setIcon(QIcon("icons/yes.jpg"))
+			else:
+				item.setIcon(QIcon("icons/no.jpg"))
 			# 保存变量Only_id
-			item.setData(Qt.UserRole,only_id)
+			item.setData(Qt.UserRole, only_id)
 			self.login_user_list.addItem(item)
 
 
@@ -85,26 +95,33 @@ class mainWindow(QMainWindow, ui_login_face.Ui_MainWindow):
 		# 对当前选中的用户进行拍照
 		only_id = self.login_user_list.currentIndex().data(Qt.UserRole)
 		user_name = self.login_user_list.currentIndex().data()
-		flag, image = self.cap.read()  # 从视频流中读取
+		if user_name != None:
 
-		# 显示照片3s
-		showImage = Image_to_QImage(self.image)  # 把读取到的视频数据变成QImage形式
-		self.timer.singleShot(3000, self.open_camera)  # 在给定的时间间隔后调用一个槽函数时发射此信号
-		self.show_camera_label.setPixmap(QPixmap.fromImage(showImage))  # 往显示视频的Label里 显示QImage
+			flag, image = self.cap.read()  # 从视频流中读取
 
-		# 保存成照片
-		image_path = VIS_PATH + user_name + '.jpg'
-		# 保存成图片存到相应路径
-		cv2.imencode('.jpg', image)[1].tofile(image_path)
+			# 显示照片3s
+			showImage = Image_to_QImage(self.image)  # 把读取到的视频数据变成QImage形式
+			self.timer.singleShot(3000, self.open_camera)  # 在给定的时间间隔后调用一个槽函数时发射此信号
+			self.show_camera_label.setPixmap(QPixmap.fromImage(showImage))  # 往显示视频的Label里 显示QImage
 
-		# 保存照片到数据库
-		data = image.tobytes()  # 将ndarray数据转成bytes保存到数据库
-		sql = "update User_Face set Face_NIR=? where onlyID =? "
-		self.database.execNoQuery(sql, [data, only_id])
+			# 保存成照片
+			image_path = VIS_PATH + user_name + '.jpg'
+			# 保存成图片存到相应路径
+			cv2.imencode('.jpg', image)[1].tofile(image_path)
 
-		# 提示保存成功
-		QMessageBox.information(self, "提示", "保存成功")
+			# 保存照片到数据库
+			data = image.tobytes()  # 将ndarray数据转成bytes保存到数据库
+			sql = "update User_Face set Face_VIS=? where onlyID =? "
+			self.database.execNoQuery(sql, [data, only_id])
 
+			# 提示保存成功
+			QMessageBox.information(self, "提示", "保存成功")
+			# 保存数据库之后重新加载一次List
+			self.load_table_data()
+
+		else:
+			# 提示请选择登记用户
+			QMessageBox.information(self, "提示", "请选择登记用户！")
 
 
 
