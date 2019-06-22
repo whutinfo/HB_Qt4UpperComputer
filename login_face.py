@@ -10,6 +10,15 @@ from Update_Table import *
 from Settings import *
 
 
+# 将摄像头读取到的一帧转成QImage格式用于显示
+def Image_to_QImage(image):
+	show = cv2.resize(image, (260, 260))  # 把读到的帧的大小重新设置为 640x480
+	show = cv2.cvtColor(show, cv2.COLOR_BGR2RGB)  # 视频色彩转换回RGB，这样才是现实的颜色
+	showImage = QImage(show.data, show.shape[1], show.shape[0],
+	                        QImage.Format_RGB888)  # 把读取到的视频数据变成QImage形式
+	return showImage
+
+
 class mainWindow(QMainWindow, ui_login_face.Ui_MainWindow):
 	def __init__(self, parent=None):
 		# super这个用法是调用父类的构造函数
@@ -28,6 +37,7 @@ class mainWindow(QMainWindow, ui_login_face.Ui_MainWindow):
 
 		# 定义定时器，为了显示摄像头的视频
 		self.timer_camera = QTimer()  # 定义定时器，用于控制显示视频的帧率
+		self.timer = QTimer()  # 用来定时一次3秒
 		self.cap = cv2.VideoCapture()  # 视频流
 		self.CAM_NUM = 0  # 为0时表示视频流来自笔记本内置摄像头
 		self.open_camera()
@@ -47,14 +57,13 @@ class mainWindow(QMainWindow, ui_login_face.Ui_MainWindow):
 
 
 	'''初始化所有槽函数'''
-
 	def slot_init(self):
 		self.get_a_picture_btn.clicked.connect(self.get_a_picture)
 		self.timer_camera.timeout.connect(self.show_camera)  # 若定时器结束，则调用show_camera()
 		self.close_btn.clicked.connect(self.closeWindow)  # 若该按键被点击，则调用close()，注意这个close是父类QtWidgets.QWidget自带的，会关闭程序
 
-	'''槽函数'''
 
+	'''槽函数'''
 	def open_camera(self):
 		if self.timer_camera.isActive() == False:  # 若定时器未启动
 			flag = self.cap.open(self.CAM_NUM)  # 参数是0，表示打开笔记本的内置摄像头，参数是视频文件路径则打开视频
@@ -63,29 +72,42 @@ class mainWindow(QMainWindow, ui_login_face.Ui_MainWindow):
 			else:
 				self.timer_camera.start(30)  # 定时器开始计时30ms，结果是每过30ms从摄像头中取一帧显示
 
+
 	def show_camera(self):
 		flag, self.image = self.cap.read()  # 从视频流中读取
-
-		show = cv2.resize(self.image, (260, 260))  # 把读到的帧的大小重新设置为 640x480
-		show = cv2.cvtColor(show, cv2.COLOR_BGR2RGB)  # 视频色彩转换回RGB，这样才是现实的颜色
-		showImage = QImage(show.data, show.shape[1], show.shape[0],
-		                   QImage.Format_RGB888)  # 把读取到的视频数据变成QImage形式
+		showImage = Image_to_QImage(self.image)  # 把读取到的视频数据变成QImage形式
 		self.show_camera_label.setPixmap(QPixmap.fromImage(showImage))  # 往显示视频的Label里 显示QImage
 
+
 	def get_a_picture(self):
+		# 停止显示视频的定时器
+		self.timer_camera.stop()
 		# 对当前选中的用户进行拍照
 		only_id = self.login_user_list.currentIndex().data(Qt.UserRole)
 		user_name = self.login_user_list.currentIndex().data()
 		flag, image = self.cap.read()  # 从视频流中读取
-		image_path =VIS_PATH + user_name+'.jpg'
+
+		# 显示照片3s
+		showImage = Image_to_QImage(self.image)  # 把读取到的视频数据变成QImage形式
+		self.timer.singleShot(3000, self.open_camera)  # 在给定的时间间隔后调用一个槽函数时发射此信号
+		self.show_camera_label.setPixmap(QPixmap.fromImage(showImage))  # 往显示视频的Label里 显示QImage
+
+		# 保存成照片
+		image_path = VIS_PATH + user_name + '.jpg'
 		# 保存成图片存到相应路径
 		cv2.imencode('.jpg', image)[1].tofile(image_path)
 
-		cv2.imshow('image',image)
 		# 保存照片到数据库
-		data = image.tobytes()       #将ndarray数据转成bytes保存到数据库
+		data = image.tobytes()  # 将ndarray数据转成bytes保存到数据库
 		sql = "update User_Face set Face_NIR=? where onlyID =? "
-		self.database.execNoQuery(sql,[data,only_id])
+		self.database.execNoQuery(sql, [data, only_id])
+
+		# 提示保存成功
+		QMessageBox.information(self, "提示", "保存成功")
+
+
+
+
 
 
 	def closeWindow(self):
